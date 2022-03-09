@@ -19,6 +19,8 @@ mobile_masse               = pow(10,-10)
 mobile_energie_cinetique   = 0
 mobile_energie_potentielle = 0
 
+potentiel_souris = 0
+
 temps_maintenant = pygame.time.get_ticks()
 
 police  = pygame.font.SysFont("monospace", 16)
@@ -41,6 +43,21 @@ dimensions_fenetre = (LARGEUR, HAUTEUR) # en pixels
 images_par_seconde = 50                 
 objets = []
 
+
+def calculer_potentiel(x, y):
+    potentiel = 0
+    for o in objets:
+        r = math.sqrt( (x - o[0])**2 + (y - o[1])**2 )
+        if(r != 0):
+            potentiel += k*o[2]/r
+    
+    r = math.sqrt( (x - mobile_x)**2 + (y - mobile_y)**2 )
+    if(r != 0):
+        potentiel += k*mobile_charge/r      
+    return potentiel
+
+
+
 def calculer_energie_potentielle(x, y, charge):
     energie = 0
     for o in objets:
@@ -48,6 +65,8 @@ def calculer_energie_potentielle(x, y, charge):
         if(r != 0):
             energie += k*o[2]*charge/r
     return energie
+
+
 
 def calculer_energie_cinetique(masse, vx, vy):
 
@@ -80,18 +99,22 @@ def mettre_a_jour_mobile(t):
 
 
 
-def tableau_de_bord(ec,ep):
+def tableau_de_bord(ec,ep, ps):
     texte_1 = "energie cinétique: {0:.2f} ".format(ec)
     image_1 = police.render(texte_1, True, NOIR)
     fenetre.blit(image_1, (dimensions_fenetre[0]//20, dimensions_fenetre[1]//20))
 
     texte_2 = "energie potentielle: {0:.2f} ".format(ep)
     image_2 = police.render(texte_2, True, NOIR)
-    fenetre.blit(image_2, (dimensions_fenetre[0]//20, dimensions_fenetre[1]//12))
+    fenetre.blit(image_2, (dimensions_fenetre[0]//20, (dimensions_fenetre[1]//20) + 50 ))
 
     texte_3 = "energie totale: {0:.2f} ".format(ep+ec)
     image_3 = police.render(texte_3, True, NOIR)
-    fenetre.blit(image_3, (dimensions_fenetre[0]//20, dimensions_fenetre[1]//8))
+    fenetre.blit(image_3, (dimensions_fenetre[0]//20, (dimensions_fenetre[1]//20) + 100))
+
+    texte_4 = "potentiel souris: {0:.2f} ".format(ps)
+    image_4 = police.render(texte_4, True, NOIR)
+    fenetre.blit(image_4, (dimensions_fenetre[0]//20, (dimensions_fenetre[1]//20) + 150))
 
 
 def dessiner_mobile():
@@ -240,18 +263,20 @@ while True:
 
     fenetre.fill(couleur_fond)
 
-
+    position_souris = pygame.mouse.get_pos()
     delta_time = temps_maintenant - pygame.time.get_ticks()
     t_seconde  = delta_time / 1000
     mettre_a_jour_mobile(t_seconde)
 
     mobile_energie_cinetique   = calculer_energie_cinetique(mobile_masse, mobile_vx, mobile_vy)
     mobile_energie_potentielle = calculer_energie_potentielle(mobile_x, mobile_y, mobile_charge)
+    potentiel_souris           = calculer_potentiel(position_souris[0], position_souris[1])
 
     ec = mobile_energie_cinetique * pow(10,6)
     ep = mobile_energie_potentielle * pow(10,6)
 
-    tableau_de_bord(ec, ep)
+
+    tableau_de_bord(ec, ep, potentiel_souris )
     #mobile_energie_potentielle = calculer_energie_potentielle(mobile_x, mobile_y, mobile_charge)
 
     temps_maintenant = pygame.time.get_ticks()
