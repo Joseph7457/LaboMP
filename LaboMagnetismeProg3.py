@@ -85,7 +85,7 @@ BLEU = (255,255,0)
 
 def tableau_de_bord():
     global mobile_energie_cinetique, mobile_energie_potentielle
-    texte_1 = "Energie cinetique : ".format(mobile_energie_cinetique)
+    texte_1 = "Energie cinetique : "
     image_1 = police.render(texte_1, True, BLEU)
     fenetre.blit(image_1, (dimensions_fenetre[0]//20, dimensions_fenetre[1]//20))
 
@@ -238,6 +238,10 @@ while True:
                 mobile_vy          = 0
 
 
+
+    fenetre.fill(couleur_fond)
+
+    
     delta_time = temps_maintenant - pygame.time.get_ticks()
     t_seconde  = delta_time / 1000
     mettre_a_jour_mobile(t_seconde)
@@ -247,7 +251,7 @@ while True:
 
     temps_maintenant = pygame.time.get_ticks()
 
-    fenetre.fill(couleur_fond)
+    
     dessiner_mobile()
     bouger_objets()
     dessiner_objets()
