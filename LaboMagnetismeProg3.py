@@ -4,7 +4,7 @@ import sys
 import random
 pygame.init()
 
-
+#Je suis pqsse ici
 CLIC = 100
 RAYON = 10
 
