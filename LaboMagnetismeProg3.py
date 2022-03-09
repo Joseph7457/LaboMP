@@ -7,6 +7,7 @@ pygame.init()
 
 CLIC = 100
 RAYON = 10
+NOIR = (0,0,0)  
 
 mobile_est_present         = False
 mobile_x                   = 400 
@@ -31,13 +32,9 @@ ROUGE     = (255,0,0)
 A = 2
 B = 5
 C = 20
-#k = 8 987 600 000
 k = 8.9876 * pow(10,9)
 
 
-
-# La norme de ce vecteur est égale à k|q|r2, où r est la distance qui sépare p et p′,
-# Paramètres
 LARGEUR = 1600
 HAUTEUR = 900
 dimensions_fenetre = (LARGEUR, HAUTEUR) # en pixels
@@ -52,10 +49,11 @@ def calculer_energie_potentielle(x, y, charge):
             energie += k*o[2]*charge/r
     return energie
 
-def mettre_a_jour_energie_cinetique():
-    global mobile_energie_cinetique
-    normeVitesse = math.sqrt( mobile_vx * mobile_vx + mobile_vy * mobile_vy )
-    mobile_energie_cinetique =  1/2 * mobile_masse * mobile_energie_cinetique
+def calculer_energie_cinetique(masse, vx, vy):
+
+    norme = math.sqrt( vx * vx + vy * vy)
+    energie = masse * norme * norme / 2
+    return energie
 
 
 
@@ -80,18 +78,20 @@ def mettre_a_jour_mobile(t):
         #mobile_x            +=  mobile_vx * t
         #mobile_y            +=  mobile_vy * t
 
-BLEU = (255,255,0)
-    
 
-def tableau_de_bord():
-    global mobile_energie_cinetique, mobile_energie_potentielle
-    texte_1 = "Energie cinetique : "
-    image_1 = police.render(texte_1, True, BLEU)
+
+def tableau_de_bord(ec,ep):
+    texte_1 = "energie cinétique: {0:.2f} ".format(ec)
+    image_1 = police.render(texte_1, True, NOIR)
     fenetre.blit(image_1, (dimensions_fenetre[0]//20, dimensions_fenetre[1]//20))
 
-    texte_2 = "Energie potentielle : ".format(mobile_energie_potentielle)
-    image_2 = police.render(texte_2, True, BLEU)
+    texte_2 = "energie potentielle: {0:.2f} ".format(ep)
+    image_2 = police.render(texte_2, True, NOIR)
     fenetre.blit(image_2, (dimensions_fenetre[0]//20, dimensions_fenetre[1]//12))
+
+    texte_3 = "energie totale: {0:.2f} ".format(ep+ec)
+    image_3 = police.render(texte_3, True, NOIR)
+    fenetre.blit(image_3, (dimensions_fenetre[0]//20, dimensions_fenetre[1]//8))
 
 
 def dessiner_mobile():
@@ -181,7 +181,6 @@ def retirer_objet(x, y):
     if (len(objets)> 0 ):
         for o in objets:
             distance = math.sqrt((o[0]-x)*(o[0]-x) + (o[1]-y)*(o[1]-y))
-            print(distance)
 
             if (distance<RAYON):
                 objets.remove(o)
@@ -241,13 +240,19 @@ while True:
 
     fenetre.fill(couleur_fond)
 
-    
+
     delta_time = temps_maintenant - pygame.time.get_ticks()
     t_seconde  = delta_time / 1000
     mettre_a_jour_mobile(t_seconde)
-    mettre_a_jour_energie_cinetique()
-    tableau_de_bord()
+
+    mobile_energie_cinetique   = calculer_energie_cinetique(mobile_masse, mobile_vx, mobile_vy)
     mobile_energie_potentielle = calculer_energie_potentielle(mobile_x, mobile_y, mobile_charge)
+
+    ec = mobile_energie_cinetique * pow(10,6)
+    ep = mobile_energie_potentielle * pow(10,6)
+
+    tableau_de_bord(ec, ep)
+    #mobile_energie_potentielle = calculer_energie_potentielle(mobile_x, mobile_y, mobile_charge)
 
     temps_maintenant = pygame.time.get_ticks()
 
