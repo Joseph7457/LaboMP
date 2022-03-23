@@ -19,8 +19,8 @@ ROUGE = (255, 0, 0)
 
 
 ### Variables Globales
-
 valeur_memorisee = 2
+
 
 def dessiner_arduino(sortie_arduino, sortie_CD4511, sortie_bouton):
     fenetre.blit(image_arduino, pos_arduino)
@@ -132,6 +132,10 @@ pin_bouton = (pos_bouton[0] + 13, pos_bouton[1] + 13)
 
 pygame.init()
 
+temps = 500 
+sig_horloge = 0 
+pygame.time.set_timer(pygame.USEREVENT, temps)
+
 fenetre = pygame.display.set_mode(dimensions_fenetre)
 pygame.display.set_caption("Programme 7 segments")
 
@@ -149,7 +153,7 @@ image_CD4028 = pygame.image.load('images/CD4028.png').convert_alpha(fenetre)
 image_bouton = pygame.image.load('images/bouton.png').convert_alpha(fenetre)
 couleur_fond = GRIS
 
-sig_horloge = pygame.time.set_timer(pygame.USEREVENT, 0.5)
+temps = 0
 
 # Boucle principale
 
@@ -164,12 +168,22 @@ while True:
             pos = pygame.mouse.get_pos()
             if(((pos_centre_bouton[0] - rayon_bouton) < pos[0] < (pos_centre_bouton[0] + rayon_bouton)) and ((pos_centre_bouton[1] - rayon_bouton) < pos[1] < (pos_centre_bouton[1] + rayon_bouton))):
                 valeur_memorisee = valeur_memorisee + 1
+        if (evenement.type == pygame.USEREVENT):
+            sig_horloge += 0.5
+            if(sig_horloge >= 1):
+                valeur_memorisee = valeur_memorisee + 1
+                sig_horloge = 0
+
     sortie_bouton = 0
+    if (valeur_memorisee >= 10):
+        valeur_memorisee = 0
     fenetre.fill(couleur_fond)
 
     sortie_CD4511 = composant_CD4511(sortie_memorisee())
     dessiner_afficheur(sortie_CD4511)
     dessiner_arduino(sortie_memorisee(), sortie_CD4511, sortie_bouton)
+    print(sig_horloge)
 
     pygame.display.flip()
     horloge.tick(images_par_seconde)
+
