@@ -9,6 +9,7 @@
 #Ricardo Ono Coimbra
 #Roxane Nashroudi
 
+import datetime as dt
 import math
 import pygame
 import sys
@@ -20,8 +21,7 @@ NOIR = (0, 0, 0)
 GRIS = (200, 200, 200)
 ROUGE = (255, 0, 0)
 
-num_afficheur = 3
-
+num_afficheur = 0
 
 ### Variables Globales
 valeur_memorisee = 2
@@ -107,11 +107,11 @@ def dessiner_afficheur(sortie_CD4511, sortie_CD4028):
         fenetre.blit(image_afficheur_s, (pos_afficheur[0] + j*101, pos_afficheur[1]))
 
         if sortie_CD4028[j] == 1:
-            latence_mat[j]  = 1
-        if latence_mat[j] == 1:
-            i = 0
-            for barre in positions_barres:
-                if sortie_CD4511[i] == 0:
+            latence_mat[j]  = sortie_CD4511
+  
+        i = 0
+        for barre in positions_barres:
+                if latence_mat[j][i] == 0:
                     i = i + 1
                     continue
                 x_b = j*101 + pos_afficheur[0] + int(round(barre[0]*(image_afficheur_s.get_width()/133)))
@@ -142,11 +142,11 @@ def composant_CD4028(entree):
     return tdv[entree];
 
 
-def sortie_memorisee(sortie):
+def sortie_memorisee(sortie, temps):
     list     = [0, 0, 0, 0]
     position = [0, 0, 0, 0]
 
-    valeur = valeur_memorisee
+    valeur = temps
     i = 3
     while(i >= 0):
         if(valeur > 0):
@@ -172,6 +172,42 @@ def connexion_bouton(sortie_bouton):
 
     return sortie_bouton
 
+def mettre_a_jour_vecteur_horloge():
+
+    global vecteur_horloge
+
+    heure    = dt.datetime.now().hour    
+    minutes  = dt.datetime.now().minute
+    secondes = dt.datetime.now().second
+
+    i        = 2
+    while( i > 0 ):
+        if (heure >= i*10):
+            vecteur_horloge[0] = i
+            heure -= i*10
+        i -= 1
+    vecteur_horloge[1] = heure
+        
+    i        = 6
+    while( i > 0 ):
+        if (minutes >= i*10):
+            vecteur_horloge[2] = i
+            minutes -= i*10
+        i -= 1
+    vecteur_horloge[3] = minutes
+
+    i        = 6
+    while( i > 0 ):
+        if (secondes >= i*10):
+            vecteur_horloge[4] = i
+            secondes -= i*10
+        i -= 1
+    vecteur_horloge[5] = secondes
+     
+
+    vecteur_horloge[1] = heure
+    print(vecteur_horloge)
+
 
 #paramètres
 dimensions_fenetre = (1100, 600)  # en pixels
@@ -187,9 +223,10 @@ rayon_bouton = 18
 pin_arduino = (pos_arduino[0] + 279, pos_arduino[1] + 353)
 pin_bouton = (pos_bouton[0] + 13, pos_bouton[1] + 13)
 
-temps_avant = 0;
-latence_mat = [[0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0]]
-
+temps_avant     = 0;
+latence_mat     = [[0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0]]
+vecteur_horloge = [0,0,0,0,0,0]
+index_v_h       = 0
 
 ### Programme
 
@@ -224,6 +261,7 @@ temps = 0
 # Boucle principale
 
 while True:
+
     temps_maintenant = pygame.time.get_ticks()
     for evenement in pygame.event.get():
         if evenement.type == pygame.QUIT:
@@ -236,14 +274,10 @@ while True:
         if (evenement.type == pygame.USEREVENT):
             sig_horloge += 0.5
             if(sig_horloge >= 1):
+                num_afficheur = num_afficheur + 1
                 valeur_memorisee = valeur_memorisee + 1
                 sig_horloge = 0
 
-            sig_horloge_num += (temps_maintenant - temps_avant)
-            print(temps_maintenant - temps_avant)
-            if(sig_horloge_num >= 0.04):
-                num_afficheur = num_afficheur + 1
-                sig_horloge_num = 0
     temps_avant = temps_maintenant
 
     sortie_bouton = 0
@@ -253,11 +287,19 @@ while True:
         num_afficheur = 0
     fenetre.fill(couleur_fond)
 
-    sortie_CD4511 = composant_CD4511(sortie_memorisee(num_afficheur))
+
+    mettre_a_jour_vecteur_horloge()
+
+    sortie_CD4511 = composant_CD4511(sortie_memorisee(num_afficheur, vecteur_horloge[num_afficheur]))
     sortie_CD4028 = composant_CD4028(num_afficheur)
 
-    dessiner_arduino(sortie_memorisee(num_afficheur), sortie_CD4511, sortie_CD4028, sortie_bouton)
+    dessiner_arduino(sortie_memorisee(num_afficheur, vecteur_horloge[num_afficheur]), sortie_CD4511, sortie_CD4028, sortie_bouton)
     dessiner_afficheur(sortie_CD4511, sortie_CD4028)
+
+
+
+
+
 
 
     pygame.display.flip()
