@@ -239,7 +239,7 @@ rayon_bouton = 18
 pin_arduino = (pos_arduino[0] + 279, pos_arduino[1] + 353)
 pin_bouton = (pos_bouton[0] + 13, pos_bouton[1] + 13)
 
-texte = "Hello Wolrd"
+texte = "Hello Wolrd "
 taille_txt = len(texte)
 print(taille_txt)
 index_txt = 0
@@ -249,6 +249,9 @@ temps_avant     = 0;
 latence_mat     = [[0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0]]
 vecteur_horloge = [0,0,0,0,0,0]
 index_v_h       = 0
+
+sortie_CD4511 = composant_CD4511(' ')
+sortie_CD4028 = composant_CD4028(0)
 
 ### Programme
 
@@ -293,36 +296,62 @@ while True:
             pos = pygame.mouse.get_pos()
             if(((pos_centre_bouton[0] - rayon_bouton) < pos[0] < (pos_centre_bouton[0] + rayon_bouton)) and ((pos_centre_bouton[1] - rayon_bouton) < pos[1] < (pos_centre_bouton[1] + rayon_bouton))):
                 valeur_memorisee = valeur_memorisee + 1
+                while(num_afficheur < 6):
+                    
+                    sortie_CD4511 = composant_CD4511(texte[index_txt])
+                    sortie_CD4028 = composant_CD4028(num_afficheur)
+                    dessiner_arduino(sortie_memorisee(num_afficheur, vecteur_horloge[num_afficheur]), sortie_CD4511, sortie_CD4028, sortie_bouton)
+                    dessiner_afficheur(sortie_CD4511, sortie_CD4028)
+                    
+                    num_afficheur += 1
+                    index_txt += 1
+                    if (index_txt>taille_txt-1):
+                        index_txt = 0                    
+
+
+                index_txt -= 5
+                num_afficheur = 0
+                
         if (evenement.type == pygame.USEREVENT):
             sig_horloge += 0.5
             if(sig_horloge >= 1):
-                num_afficheur = num_afficheur + 1
-                index_txt += 1
-                sig_horloge = 0
+                sig_horloge   = 0
+                num_afficheur = 0
+                
+                while(num_afficheur < 6):
+                    
+                    sortie_CD4511 = composant_CD4511(texte[index_txt])
+                    sortie_CD4028 = composant_CD4028(num_afficheur)
+                    dessiner_arduino(sortie_memorisee(num_afficheur, vecteur_horloge[num_afficheur]), sortie_CD4511, sortie_CD4028, sortie_bouton)
+                    dessiner_afficheur(sortie_CD4511, sortie_CD4028)
+                    
+                    num_afficheur += 1
+                    index_txt += 1
+                    if (index_txt>taille_txt-1):
+                        index_txt = 0                    
+
+
+                index_txt -= 5
+                num_afficheur = 0
+
+                
 
     temps_avant = temps_maintenant
 
     sortie_bouton = 0
     if (valeur_memorisee >= 10):
         valeur_memorisee = 0
-    if (num_afficheur > 5):
-        num_afficheur = 0
-        index_txt -= 5
-    if (index_txt>taille_txt-1):
-        index_txt = 0
+ 
+
     fenetre.fill(couleur_fond)
 
 
     mettre_a_jour_vecteur_horloge()
 
-    sortie_CD4511 = composant_CD4511(texte[index_txt])
 
-    sortie_CD4028 = composant_CD4028(num_afficheur)
 
     dessiner_arduino(sortie_memorisee(num_afficheur, vecteur_horloge[num_afficheur]), sortie_CD4511, sortie_CD4028, sortie_bouton)
     dessiner_afficheur(sortie_CD4511, sortie_CD4028)
-
-
 
 
 
