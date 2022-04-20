@@ -5,6 +5,9 @@
 # Programme : 7 segments.
 #
 # ------------------------------------------------------------------------
+#Joseph Gabriel
+#Ricardo Ono Coimbra
+#Roxane Nashroudi
 
 import math
 import pygame
@@ -132,8 +135,8 @@ pin_bouton = (pos_bouton[0] + 13, pos_bouton[1] + 13)
 
 pygame.init()
 
-temps = 500 
-sig_horloge = 0 
+temps = 500
+sig_horloge = 0
 pygame.time.set_timer(pygame.USEREVENT, temps)
 
 fenetre = pygame.display.set_mode(dimensions_fenetre)
@@ -182,8 +185,6 @@ while True:
     sortie_CD4511 = composant_CD4511(sortie_memorisee())
     dessiner_afficheur(sortie_CD4511)
     dessiner_arduino(sortie_memorisee(), sortie_CD4511, sortie_bouton)
-    print(sig_horloge)
 
     pygame.display.flip()
     horloge.tick(images_par_seconde)
-
