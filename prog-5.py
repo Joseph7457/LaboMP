@@ -105,7 +105,10 @@ def dessiner_afficheur(sortie_CD4511, sortie_CD4028):
 
     for j in range(0, 6):
         fenetre.blit(image_afficheur_s, (pos_afficheur[0] + j*101, pos_afficheur[1]))
+
         if sortie_CD4028[j] == 1:
+            latence_mat[j]  = 1
+        if latence_mat[j] == 1:
             i = 0
             for barre in positions_barres:
                 if sortie_CD4511[i] == 0:
