@@ -1,190 +1,172 @@
 # ------------------------------------------------------------------------
-# Laboratoires de programmation mathématique et physique 1
+# Laboratoires de programmation mathématique et physique 2
 # ------------------------------------------------------------------------
 #
-# Programme 5: Vecteurs vitesse et accélération, détection de gestes.
-#
-# *** CONSIGNES ***: Ne modifier que les fonctions
-#                        deplacer_pol(),
-#                        dessiner_vecteur(),
-#                        initialiser_calculs(),
-#                        calculer_vitesse_acceleration_2d() et
-#                        detecter_geste()  !!!
+# Programme : 7 segments.
 #
 # ------------------------------------------------------------------------
+#Joseph Gabriel
+#Ricardo Ono Coimbra
+#Roxane Nashroudi
 
 import math
 import pygame
 import sys
+import numpy as np
 
 ### Constante(s)
 
-BLEU = (0, 0, 255)
-JAUNEMIEL = (255, 192, 0)
 NOIR = (0, 0, 0)
+GRIS = (200, 200, 200)
 ROUGE = (255, 0, 0)
-VERT = (0, 255, 0)
 
-A = 2
-B = 5
-C = 20
 
-### Fonctions
+### Variables Globales
+valeur_memorisee = 2
 
-# *** A MODIFIER *********************************************************
 
-def deplacer_pol(point, distance, orientation):
-        x, y = point
+def dessiner_arduino(sortie_arduino, sortie_CD4511, sortie_CD4028, sortie_bouton):
+    fenetre.blit(image_arduino, pos_arduino)
+    fenetre.blit(image_CD4511, pos_CD4511)
+    fenetre.blit(image_bouton, pos_bouton)
+    fenetre.blit(image_CD4028, pos_CD4028)
 
-        x = point[0] + (distance * math.cos(orientation))
-        y = point[1] + (distance * math.sin(orientation))
 
-        return (x, y)
+    for j in range(0, 2):
+        if j == 0:
+            off_ard = 285
+            off_cd = 15
+            pos_carte = pos_CD4511
+            r = range(0, 4)
 
-# *** A MODIFIER *********************************************************
+        if j == 1:
+            off_ard = 194
+            off_cd = 91
+            pos_carte = pos_CD4028
+            r = range(4, 8)
 
-def dessiner_vecteur(fenetre, couleur, origine, vecteur):
-    p = origine
-    p4 = p + vecteur
-    angle = math.atan2(vecteur[1], vecteur[0])
+        for i in r:
+            if sortie_arduino[i] == 0:
+                couleur = NOIR
+            else:
+                couleur = ROUGE
 
-    if math.sqrt(vecteur[1]**2 + vecteur[0]**2) >= C:
-        p4 = (p[0] + vecteur[0], p[1] + vecteur[1])
-        pp4 = math.sqrt(vecteur[1]**2 + vecteur[0]**2)
-        p1 = deplacer_pol(p, A, angle - math.pi/2)
-        p7 = deplacer_pol(p, A, angle + math.pi/2)
-        p2 = deplacer_pol(p1, pp4 - C, angle)
-        p6 = deplacer_pol(p7, pp4 - C, angle)
-        p3 = deplacer_pol(p2, B, angle - math.pi/2)
-        p5 = deplacer_pol(p6, B, angle + math.pi/2)
+            pygame.draw.line(fenetre, couleur, (pos_arduino[0] + 280, pos_arduino[1] + off_ard),
+                            (pos_carte[0] + 7, pos_carte[1] + off_cd), 5)
+            off_ard = off_ard + 14
+            off_cd = off_cd + 19
 
-        pygame.draw.polygon(fenetre, couleur, [p1, p2, p3, p4, p5, p6, p7])
 
+
+    off_cd = 15
+    off_aff = 5
+    i = 0
+    for i in range(0, 7):
+        if sortie_CD4511[i] == 0:
+            couleur = NOIR
+        else:
+            couleur = ROUGE
+        pygame.draw.line(fenetre, couleur, (pos_afficheur[0] + 591, pos_afficheur[1] + off_aff),
+                        (pos_CD4511[0] + 102, pos_CD4511[1] + off_cd), 5)
+        off_aff = off_aff + 19
+        off_cd = off_cd + 19
+
+
+    if sortie_bouton == 0:
+        couleur = NOIR
     else:
-        p3 = (p[0] + vecteur[0], p[1] + vecteur[0])
-        p1 = deplacer_pol(p3, C, angle + math.pi)
-        p2 = deplacer_pol(p1, A + B, angle - math.pi/2)
-        p4 = deplacer_pol(p1, A + B, angle + math.pi/2)
+        couleur = ROUGE
+    pygame.draw.line(fenetre, couleur, (pos_arduino[0] + 279, pos_arduino[1] + 353),
+                        (pos_bouton[0] + 13, pos_bouton[1] + 13), 5)
 
-        pygame.draw.polygon(fenetre, couleur, [p1, p2, p3, p4])
+    i = 0
+    off_cd = (102, 111)
+    off_aff = 44
+    for i in range(0, 6):
+        if sortie_CD4028[i] == 0:
+            couleur = NOIR
+        else:
+            couleur = ROUGE
+        pygame.draw.line(fenetre, couleur, (pos_CD4028[0] + off_cd[0], pos_CD4028[1] + off_cd[1]),
+                        (pos_afficheur[0] + off_aff, pos_CD4028[1] + off_cd[1]), 5)
 
-# *** A MODIFIER *********************************************************
+        pygame.draw.line(fenetre, couleur, (pos_afficheur[0] + off_aff, pos_afficheur[1]),
+                        (pos_afficheur[0] + off_aff, pos_CD4028[1] + off_cd[1] - 2), 5)
+        off_cd = (off_cd[0], off_cd[1] - 20)
+        off_aff = off_aff + 101
 
-def initialiser_calculs():
-    global v_x, v_y, a_x, a_y, v_xp, v_yp, a_xp, a_yp, position, position_precedente, temps_maintenant, temps_precedent
 
-    v_x = 0
-    v_y = 0
-    a_x = 0
-    a_y = 0
-    v_xp = 0
-    v_yp = 0
-    a_xp = 0
-    a_yp = 0
-    position = (0, 0)
-    position_precedente = (0, 0)
-    temps_maintenant = 0
-    temps_precedent = 0
+
+def dessiner_afficheur(sortie_CD4511, sortie_CD4028):
+    positions_barres = [[32, 14], [89, 20], [87, 88], [28, 150],
+                        [17, 88], [19, 20], [30, 82]]
+
+    for j in range(0, 6):
+        fenetre.blit(image_afficheur_s, (pos_afficheur[0] + j*101, pos_afficheur[1]))
+        if sortie_CD4028[j] == 1:
+            i = 0
+            for barre in positions_barres:
+                if sortie_CD4511[i] == 0:
+                    i = i + 1
+                    continue
+                x_b = j*101 + pos_afficheur[0] + int(round(barre[0]*(image_afficheur_s.get_width()/133)))
+                y_b = pos_afficheur[1] + int(round(barre[1]*(image_afficheur_s.get_height()/192)))
+                if i == 0 or i == 3 or i == 6:
+                    fenetre.blit(barre_horizontale_s, (x_b, y_b))
+                else:
+                    fenetre.blit(barre_verticale_s, (x_b, y_b))
+                i = i + 1
     return
 
-# *** A MODIFIER *********************************************************
+def composant_CD4511(entree):
+    tdv = np.array([[1, 1, 1, 1, 1, 1, 0], [0, 1, 1, 0, 0, 0, 0], [1, 1, 0, 1, 1, 0, 1], [1, 1, 1, 1, 0, 0, 1], [0, 1, 1, 0, 0, 1, 1], [1, 0, 1, 1, 0, 1, 1], [1, 0, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 0, 1, 1]])
+    decimal = 0
+    i = 0
+    while(i < 4):
+        if(entree[3-i] == 1):
+            decimal = decimal + pow(2, i)
+        i = i + 1
+    return tdv[decimal]
 
-def calculer_vitesse_acceleration_2d(position, temps_maintenant):
-    global v_x, v_y, a_x, a_y, v_xp, v_yp, a_xp, a_yp, position_precedente, temps_precedent
-    v_x = (position[0] - position_precedente[0]) / (temps_maintenant - temps_precedent)
-    v_y = (position[1] - position_precedente[1]) / (temps_maintenant - temps_precedent)
-    a_x = (v_x - v_xp) / (temps_maintenant - temps_precedent)
-    a_y = (v_y - v_yp) / (temps_maintenant - temps_precedent)
+def sortie_memorisee():
+    list = [0, 0, 0, 0]
+    num_afficheur = [list + 0 0 0 0]
+    valeur = valeur_memorisee
+    i = 3
+    while(i >= 0):
+        if(valeur > 0):
+            list[i] = valeur%2
+            valeur = valeur//2
+        i = i-1
+    numpyList = np.array(list)
+    return numpyList
 
-    v_xp = v_x
-    v_yp = v_y
-    a_xp = a_x
-    a_yp = a_y
-    position_precedente = position
-    temps_precedent = temps_maintenant
+def gerer_click():
+    return 0
 
-    return (v_x, v_y), (a_x, a_y)
 
-# *** A MODIFIER *********************************************************
-
-def detecter_geste(vitesse, acceleration):
-
-    (v_x, v_y) = vitesse
-    (a_x, a_y) = acceleration
-
-    geste = False
-    if (v_x**2 + v_y**2)**(1/2) <= 0.2 and (a_x**2 + a_y**2)**(1/2) >= 0.002 and (math.atan2(a_y, a_x) <= 5/9 * math.pi and math.atan2(a_y, a_x) >= 4/9 * math.pi):
-        geste = True
-
-    return geste
-
-# ************************************************************************
-
-def afficher_compteur():
-    image = police.render(str(compteur), True, NOIR)
-    fenetre.blit(image, (50, 50))
-    return
-
-def amortir(v, ancien_v, coefficient):
-    return (ancien_v[0] * coefficient + v[0] * (1.0 - coefficient),
-            ancien_v[1] * coefficient + v[1] * (1.0 - coefficient))
-
-def traiter_mouvement(position):
-    global premier_mouvement, ancienne_position, ancienne_acceleration
-    global compteur, derniere_detection
-
-    if premier_mouvement:
-        premier_mouvement = False
+def connexion_bouton(sortie_bouton):
+    if(sortie_bouton == 0):
+        pygame.draw.line(fenetre, NOIR, pin_arduino, pin_bouton, 5)
     else:
-        x, y = position
+        pygame.draw.line(fenetre, ROUGE, pin_arduino, pin_bouton, 5)
 
-        # Amortissement pour lisser les mouvements.
-        position = amortir(position, ancienne_position,
-                           amortissement_position)
-
-        t = pygame.time.get_ticks()
-        v, a = calculer_vitesse_acceleration_2d(position, t)
-
-        a = amortir(a, ancienne_acceleration, amortissement_acceleration)
-        ancienne_acceleration = a
-
-        if detecter_geste(v, a) and t > derniere_detection + 500:
-            compteur += 1
-            derniere_detection = t
-
-        fenetre.fill(couleur_fond)
-
-        afficher_compteur()
-
-        pygame.draw.circle(fenetre, BLEU,
-                           (int(position[0]), int(position[1])), 20)
-
-        if doit_afficher_vitesse:
-            dessiner_vecteur(fenetre, ROUGE, position,
-                             (int(v[0] * facteur_vitesse),
-                              int(v[1] * facteur_vitesse)))
-
-        if doit_afficher_acceleration:
-            dessiner_vecteur(fenetre, VERT, position,
-                             (int(a[0] * facteur_acceleration),
-                              int(a[1] * facteur_acceleration)))
-
-        pygame.display.flip()
-
-    ancienne_position = position
-    return
+    return sortie_bouton
 
 ### Paramètre(s)
 
-dimensions_fenetre = (800, 600)  # en pixels
+dimensions_fenetre = (1100, 600)  # en pixels
 images_par_seconde = 25
 
-couleur_fond = JAUNEMIEL
-
-amortissement_position = 0.7
-amortissement_acceleration = 0.5
-facteur_vitesse = 200
-facteur_acceleration = 40000
+pos_arduino = (0, 70)
+pos_CD4511 = (333, 340)
+pos_CD4028 = (333, 128)
+pos_afficheur = (500, 350)
+pos_bouton = (333, 524)
+pos_centre_bouton = (pos_bouton[0] + 51, pos_bouton[1] + 34)
+rayon_bouton = 18
+pin_arduino = (pos_arduino[0] + 279, pos_arduino[1] + 353)
+pin_bouton = (pos_bouton[0] + 13, pos_bouton[1] + 13)
 
 ### Programme
 
@@ -192,40 +174,56 @@ facteur_acceleration = 40000
 
 pygame.init()
 
+temps = 500
+sig_horloge = 0
+pygame.time.set_timer(pygame.USEREVENT, temps)
+
 fenetre = pygame.display.set_mode(dimensions_fenetre)
-pygame.display.set_caption("Programme 5");
+pygame.display.set_caption("Programme 7 segments")
 
 horloge = pygame.time.Clock()
-police  = pygame.font.SysFont("monospace", 36)
 
-premier_mouvement = True
+image_afficheur_s = pygame.image.load('images/7_seg_s.png').convert_alpha(fenetre)
+barre_verticale_s = pygame.image.load('images/vertical_s.png').convert_alpha(fenetre)
+barre_horizontale_s = pygame.image.load('images/horizontal_s.png').convert_alpha(fenetre)
+image_afficheur = pygame.image.load('images/7_seg.png').convert_alpha(fenetre)
+barre_verticale = pygame.image.load('images/vertical.png').convert_alpha(fenetre)
+barre_horizontale = pygame.image.load('images/horizontal.png').convert_alpha(fenetre)
+image_arduino = pygame.image.load('images/arduino.png').convert_alpha(fenetre)
+image_CD4511 = pygame.image.load('images/CD4511.png').convert_alpha(fenetre)
+image_CD4028 = pygame.image.load('images/CD4028.png').convert_alpha(fenetre)
+image_bouton = pygame.image.load('images/bouton.png').convert_alpha(fenetre)
+couleur_fond = GRIS
 
-ancienne_acceleration = (0.0, 0.0)
-
-doit_afficher_vitesse = True
-doit_afficher_acceleration = True
-
-compteur = 0
-
-derniere_detection = -1000
-
-fenetre.fill(couleur_fond)
-pygame.display.flip()
+temps = 0
 
 # Boucle principale
 
-initialiser_calculs()
 
 while True:
+    temps_maintenant = pygame.time.get_ticks()
     for evenement in pygame.event.get():
         if evenement.type == pygame.QUIT:
             pygame.quit()
-            sys.exit();
-        elif evenement.type == pygame.KEYDOWN:
-            if evenement.key == pygame.K_a:
-                doit_afficher_acceleration = not doit_afficher_acceleration
-            elif evenement.key == pygame.K_v:
-                doit_afficher_vitesse = not doit_afficher_vitesse
+            sys.exit()
+        if(evenement.type == pygame.MOUSEBUTTONDOWN):
+            pos = pygame.mouse.get_pos()
+            if(((pos_centre_bouton[0] - rayon_bouton) < pos[0] < (pos_centre_bouton[0] + rayon_bouton)) and ((pos_centre_bouton[1] - rayon_bouton) < pos[1] < (pos_centre_bouton[1] + rayon_bouton))):
+                valeur_memorisee = valeur_memorisee + 1
+        if (evenement.type == pygame.USEREVENT):
+            sig_horloge += 0.5
+            if(sig_horloge >= 1):
+                valeur_memorisee = valeur_memorisee + 1
+                sig_horloge = 0
 
-    traiter_mouvement(pygame.mouse.get_pos())
+    sortie_bouton = 0
+    if (valeur_memorisee >= 10):
+        valeur_memorisee = 0
+    fenetre.fill(couleur_fond)
+
+    sortie_CD4511 = composant_CD4511(sortie_memorisee())
+    dessiner_arduino(np.zeros(8, dtype=int), np.zeros(7, dtype=int), np.zeros(6, dtype=int), 0)
+    dessiner_afficheur(np.zeros(7, dtype=int), np.zeros(6, dtype=int))
+
+    pygame.display.flip()
     horloge.tick(images_par_seconde)
