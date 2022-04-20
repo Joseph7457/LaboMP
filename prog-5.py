@@ -21,7 +21,7 @@ NOIR = (0, 0, 0)
 GRIS = (200, 200, 200)
 ROUGE = (255, 0, 0)
 
-num_afficheur = 0
+num_afficheur = 5
 
 ### Variables Globales
 valeur_memorisee = 2
@@ -274,7 +274,7 @@ while True:
         if (evenement.type == pygame.USEREVENT):
             sig_horloge += 0.5
             if(sig_horloge >= 1):
-                num_afficheur = num_afficheur + 1
+                num_afficheur = num_afficheur - 1
                 valeur_memorisee = valeur_memorisee + 1
                 sig_horloge = 0
 
@@ -283,8 +283,8 @@ while True:
     sortie_bouton = 0
     if (valeur_memorisee >= 10):
         valeur_memorisee = 0
-    if (num_afficheur >= 6):
-        num_afficheur = 0
+    if (num_afficheur < 0):
+        num_afficheur = 5
     fenetre.fill(couleur_fond)
 
 
