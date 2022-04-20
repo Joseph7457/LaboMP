@@ -20,6 +20,8 @@ NOIR = (0, 0, 0)
 GRIS = (200, 200, 200)
 ROUGE = (255, 0, 0)
 
+num_afficheur = 3
+
 
 ### Variables Globales
 valeur_memorisee = 2
@@ -128,17 +130,31 @@ def composant_CD4511(entree):
         i = i + 1
     return tdv[decimal]
 
-def sortie_memorisee():
-    list = [0, 0, 0, 0]
-    num_afficheur = [list + 0 0 0 0]
+
+def composant_CD4028(entree):
+    tdv = np.array([[1, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 0, 1]]) 
+                   
+    return tdv[entree];
+
+
+def sortie_memorisee(sortie):
+    list     = [0, 0, 0, 0]
+    position = [0, 0, 0, 0]
+
     valeur = valeur_memorisee
     i = 3
     while(i >= 0):
         if(valeur > 0):
             list[i] = valeur%2
-            valeur = valeur//2
+            valeur  = valeur//2
+        if(sortie > 0):
+            position[i] = sortie%2
+            sortie      = sortie//2
+            
         i = i-1
-    numpyList = np.array(list)
+    numpyList = np.array(list+position)
     return numpyList
 
 def gerer_click():
@@ -153,8 +169,8 @@ def connexion_bouton(sortie_bouton):
 
     return sortie_bouton
 
-### Paramètre(s)
 
+#paramètres
 dimensions_fenetre = (1100, 600)  # en pixels
 images_par_seconde = 25
 
@@ -168,6 +184,10 @@ rayon_bouton = 18
 pin_arduino = (pos_arduino[0] + 279, pos_arduino[1] + 353)
 pin_bouton = (pos_bouton[0] + 13, pos_bouton[1] + 13)
 
+temps_avant = 0;
+latence_mat = [[0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0], [0,0,0,0,0,0,0]]
+
+
 ### Programme
 
 # Initialisation
@@ -175,7 +195,8 @@ pin_bouton = (pos_bouton[0] + 13, pos_bouton[1] + 13)
 pygame.init()
 
 temps = 500
-sig_horloge = 0
+sig_horloge     = 0
+sig_horloge_num = 0
 pygame.time.set_timer(pygame.USEREVENT, temps)
 
 fenetre = pygame.display.set_mode(dimensions_fenetre)
@@ -199,7 +220,6 @@ temps = 0
 
 # Boucle principale
 
-
 while True:
     temps_maintenant = pygame.time.get_ticks()
     for evenement in pygame.event.get():
@@ -216,14 +236,26 @@ while True:
                 valeur_memorisee = valeur_memorisee + 1
                 sig_horloge = 0
 
+            sig_horloge_num += (temps_maintenant - temps_avant)
+            print(temps_maintenant - temps_avant)
+            if(sig_horloge_num >= 0.04):
+                num_afficheur = num_afficheur + 1
+                sig_horloge_num = 0
+    temps_avant = temps_maintenant
+
     sortie_bouton = 0
     if (valeur_memorisee >= 10):
         valeur_memorisee = 0
+    if (num_afficheur >= 6):
+        num_afficheur = 0
     fenetre.fill(couleur_fond)
 
-    sortie_CD4511 = composant_CD4511(sortie_memorisee())
-    dessiner_arduino(np.zeros(8, dtype=int), np.zeros(7, dtype=int), np.zeros(6, dtype=int), 0)
-    dessiner_afficheur(np.zeros(7, dtype=int), np.zeros(6, dtype=int))
+    sortie_CD4511 = composant_CD4511(sortie_memorisee(num_afficheur))
+    sortie_CD4028 = composant_CD4028(num_afficheur)
+
+    dessiner_arduino(sortie_memorisee(num_afficheur), sortie_CD4511, sortie_CD4028, sortie_bouton)
+    dessiner_afficheur(sortie_CD4511, sortie_CD4028)
+
 
     pygame.display.flip()
     horloge.tick(images_par_seconde)
