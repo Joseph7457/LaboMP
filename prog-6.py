@@ -1,301 +1,195 @@
-# ------------------------------------------------------------------------
-# Laboratoires de programmation mathématique et physique 1
-# ------------------------------------------------------------------------
-#
-# Programme 6: Tri balistique.
-#
-# *** CONSIGNES ***: Ne modifier que les fonctions
-#                        mua_2d(),
-#                        calculer_vitesse() et
-#                        calculer_impact()  !!!
-#
-# ------------------------------------------------------------------------
-
 import math
 import pygame
 import sys
+#Joseph Gabriel
+#Ricardo Ono Coimbra
+#Roxane Nashroudi
 
-### Constante(s)
+# Fonctions
 
-BLEUCIEL = (127, 191, 255)
+def dessiner_pointilles_h(surface, couleur, y):
+    n = dimensions_fenetre[0] // (longueur_pointille * 2)
+
+    for i in range(n + 1):
+        x1 = int((i - 0.25) * longueur_pointille * 2)
+        x2 = x1 + longueur_pointille
+        pygame.draw.line(surface, couleur, (x1, y), (x2, y))
+
+    return
+
+def dessiner_pointilles_v(surface, couleur, x):
+    n = dimensions_fenetre[1] // (longueur_pointille * 2)
+
+    for i in range(n + 1):
+        y1 = (i - 0.25) * longueur_pointille * 2
+        y2 = y1 + longueur_pointille
+        pygame.draw.line(surface, couleur, (x, y1), (x, y2))
+
+    return
+
+def afficher_grille():
+    yc = dimensions_fenetre[1] // 2
+    nh = yc // taille_grille
+
+    for i in range(1, nh + 1):
+        dessiner_pointilles_h(fenetre, GRIS, yc + i * taille_grille)
+        dessiner_pointilles_h(fenetre, GRIS, yc - i * taille_grille)
+
+    pygame.draw.line(fenetre, GRIS, (0, yc), (dimensions_fenetre[0], yc))
+
+    nv = dimensions_fenetre[0] // taille_grille
+    for i in range(0, nv + 1):
+        dessiner_pointilles_v(fenetre, GRIS, i * taille_grille)
+
+    return
+
+def generer_signaux(delta_t):
+    PERIODE_1 = 1 / 111
+    PERIODE_2 = 1
+    PERIODE_3 = 1
+    PERIODE_4 = 1
+
+    AMPL_1 = 5
+    AMPL_2 = 1
+    AMPL_3 = 1
+    AMPL_4 = 1
+
+    global signaux_initialises, a1, a2, a3, a4
+    if not signaux_initialises:
+        a1 = 0
+        a2 = 0
+        a3 = 0
+        a4 = 0
+        signaux_initialises = True
+        return (0, 0, 0, 0)
+
+    a1 = math.fmod(a1 + delta_t * 2 * math.pi / PERIODE_1,
+                   2 * math.pi)
+    a2 = math.fmod(a2 + delta_t * 2 * math.pi / PERIODE_2,
+                   2 * math.pi)
+    a3 = math.fmod(a3 + delta_t * 2 * math.pi / PERIODE_3,
+                   2 * math.pi)
+    a4 = math.fmod(a4 + delta_t * 2 * math.pi / PERIODE_4,
+                   2 * math.pi)
+
+    return (AMPL_1 * math.cos(a1),
+            (AMPL_1 * math.cos(a1)) / 2,
+            (AMPL_1 * math.cos(a1)) *((AMPL_1 * math.cos(a1)) / 2),
+            100)
+
+def acquisition(t):
+    global acquisition_initialisee, t_signaux_prec
+
+    if acquisition_initialisee:
+        dt = t - t_signaux_prec
+        if dt <= 0:
+            print("erreur de timing")
+            sys.exit()
+
+        while dt > t_echantillons:
+            generer_signaux(t_echantillons)
+            dt -= t_echantillons
+
+        s = generer_signaux(dt)
+    else:
+        s = (0, 0, 0, 0)
+        acquisition_initialisee = True
+
+    t_signaux_prec = t
+
+    return s
+
+def afficher_signal(x, v, couleur, gain):
+    y = dimensions_fenetre[1] // 2 - v * gain
+    pygame.draw.line(fenetre, couleur, (x, y - 5), (x, y + 5))
+    return
+
+def afficher_trame(temps_maintenant):
+    signaux_prec = acquisition(temps_maintenant)
+
+    for x in range(dimensions_fenetre[0]):
+        temps_maintenant += t_echantillons
+        signaux = acquisition(temps_maintenant)
+
+        if (signaux[0] >= seuil_trigger and
+            signaux_prec[0] < seuil_trigger):
+            break
+
+        signaux_prec = signaux
+
+    for x in range(dimensions_fenetre[0]):
+        temps_maintenant += t_echantillons
+        signaux = acquisition(temps_maintenant)
+        for i in range(4):
+            afficher_signal(x, signaux[i], couleur_signaux[i],
+                            gain_signaux[i])
+    return
+
+def afficher_trigger():
+    y =  dimensions_fenetre[1] // 2 - seuil_trigger * gain_signaux[0]
+    pygame.draw.line(fenetre, ROUGE, (0, y), (20, y), 5)
+    return
+
+# Constantes
+
+BLEUCLAIR = (127, 191, 255)
+CYAN = (0, 255, 255)
+GRIS = (127, 127, 127)
 JAUNE = (255, 255, 0)
-NOIR = (0, 0, 0)
-ORANGE = (255, 192, 0)
+MAGENTA = (255, 0, 255)
 ROUGE = (255, 0, 0)
+VERT = (0, 255, 0)
 
-### Fonctions
-
-# *** A MODIFIER *********************************************************
-
-def mua_2d(depart, temps_depart, vitesse_initiale, acceleration_verticale,
-           temps_maintenant):
-
-    (x0, y0) = depart
-    (v0x, v0y) = vitesse_initiale
-    g = acceleration_verticale
-    delta_t = temps_maintenant - temps_depart
-
-    xt = x0 + v0x * delta_t
-    yt = y0 + v0y * delta_t + (1/2 * g * (delta_t)**2)
-
-    return (xt, yt)
-
-# *** A MODIFIER *********************************************************
-
-def calculer_vitesse(depart, angle, cible, acceleration_verticale):
-
-    (x0, y0) = depart
-    (xc, yc) = cible
-    g = acceleration_verticale
-    teta = angle
-    tp = False
-    v = 0
-    delta_t_2 = (2 * ((yc - y0) - (xc - x0) * math.tan(teta))/ g)
-    if delta_t_2 > 0:
-        delta_t = (delta_t_2)**(1/2)
-        v = (xc - x0)/ (delta_t * math.cos(teta))
-        tp = True
-
-    return (tp, v)
-
-# *** A MODIFIER *********************************************************
-
-def calculer_impact(depart, angle, hauteur_sol, vitesse,
-                    acceleration_verticale):
-
-    (x0, y0) = depart
-    ys = hauteur_sol
-    g = acceleration_verticale
-    teta = angle
-    delta_t = 0
-    v = vitesse
-
-    delta_t = (-v * math.sin(teta) + ((v * math.sin(teta))**2 -  2 * g * (y0 - ys))**(1/2))/ g
-    xs = x0 + v * math.cos(teta) * delta_t
-
-    return xs
-
-# ************************************************************************
-
-def dessiner_canon():
-    p1 = (position_canon[0]
-          + RAYON_CANON * math.cos(angle_canon + math.pi/2),
-          position_canon[1]
-          + RAYON_CANON * math.sin(angle_canon + math.pi/2))
-    p4 = (position_canon[0]
-          + RAYON_CANON * math.cos(angle_canon - math.pi/2),
-          position_canon[1]
-          + RAYON_CANON * math.sin(angle_canon - math.pi/2))
-    pp = (LONGUEUR_CANON * math.cos(angle_canon),
-          LONGUEUR_CANON * math.sin(angle_canon))
-    p2 = (p1[0] + pp[0], p1[1] + pp[1])
-    p3 = (p4[0] + pp[0], p4[1] + pp[1])
-    pygame.draw.polygon(fenetre, ORANGE, [p1, p2, p3, p4])
-    pygame.draw.circle(fenetre, JAUNE, position_canon,
-                       RAYON_DISQUE_CANON)
-
-    if vitesse_automatique:
-        couleur_indicateur = ROUGE
-    else:
-        couleur_indicateur = ORANGE
-
-    pygame.draw.rect(fenetre, couleur_fond,
-                     ((position_canon[0] - LARGEUR_INDICATEUR // 2,
-                       position_canon[1] + OFFSET_INDICATEUR),
-                      (LARGEUR_INDICATEUR, HAUTEUR_INDICATEUR)))
-    pygame.draw.rect(fenetre, couleur_indicateur,
-                     ((position_canon[0] - LARGEUR_INDICATEUR // 2,
-                       position_canon[1] + OFFSET_INDICATEUR),
-                      (LARGEUR_INDICATEUR, HAUTEUR_INDICATEUR)), 4)
-
-    if vitesse_tir > MAX_VITESSE:
-        v = MAX_VITESSE
-    elif vitesse_tir < MIN_VITESSE:
-        v = MIN_VITESSE
-    else:
-        v = vitesse_tir
-
-    y = int((v - MIN_VITESSE) * HAUTEUR_INDICATEUR
-            / (MAX_VITESSE - MIN_VITESSE))
-
-    pygame.draw.rect(fenetre, couleur_indicateur,
-                     ((position_canon[0] - LARGEUR_INDICATEUR // 2,
-                       position_canon[1] + OFFSET_INDICATEUR
-                       + HAUTEUR_INDICATEUR - y),
-                      (LARGEUR_INDICATEUR, y)))
-
-    return
-
-def ajouter_projectile():
-    projectiles.append({'position_depart': position_canon,
-                        'temps_depart': pygame.time.get_ticks(),
-                        'vitesse_initiale':
-                        (vitesse_tir * math.cos(angle_canon),
-                         vitesse_tir * math.sin(angle_canon))})
-    return
-
-def dessiner_cible():
-    if not cible_presente:
-        return
-
-    pygame.draw.circle(fenetre, ROUGE, position_cible, RAYON_CIBLE, 5)
-    pygame.draw.rect(fenetre, ROUGE, ((position_cible[0] - 1,
-                                       position_cible[1] - RAYON_CIBLE),
-                                      (2, 2 * RAYON_CIBLE)))
-    pygame.draw.rect(fenetre, ROUGE, ((position_cible[0] - RAYON_CIBLE,
-                                       position_cible[1] - 1),
-                                      (2 * RAYON_CIBLE, 2)))
-    return
-
-def dessiner_projectiles():
-    temps_maintenant = pygame.time.get_ticks()
-    for projectile in projectiles:
-        position = mua_2d(projectile['position_depart'],
-                          projectile['temps_depart'],
-                          projectile['vitesse_initiale'],
-                          GRAVITE,
-                          temps_maintenant)
-        pygame.draw.circle(fenetre, NOIR, list(map(int, position)), 8)
-    return
-
-def dessiner_impact():
-    x = position_impact
-    pygame.draw.polygon(fenetre, ROUGE, ((x, dimensions_fenetre[1] - 35),
-                                         (x, dimensions_fenetre[1] - 15),
-                                         (x + 20, dimensions_fenetre[1] - 25)))
-    pygame.draw.rect(fenetre, NOIR, ((x, dimensions_fenetre[1] - 40), (3, 40)))
-    return
-
-def gerer_bouton(evenement):
-    global position_cible, cible_presente, vitesse_automatique
-    if evenement.button == 1:
-        ajouter_projectile()
-    elif evenement.button == 3:
-        position_cible = evenement.pos
-        cible_presente = True
-        vitesse_automatique = False
-    return
-
-def gerer_touche(touche):
-    global angle_canon, vitesse_tir, cible_presente, vitesse_automatique
-    global position_impact
-    if touche == pygame.K_RIGHT:
-        angle_canon += ANGLE_INCREMENT
-        vitesse_automatique = False
-        if angle_canon > MAX_ANGLE_CANON:
-            angle_canon = MAX_ANGLE_CANON
-    elif touche == pygame.K_LEFT:
-        angle_canon -= ANGLE_INCREMENT
-        vitesse_automatique = False
-        if angle_canon < MIN_ANGLE_CANON:
-            angle_canon = MIN_ANGLE_CANON
-    elif touche == pygame.K_UP:
-        if vitesse_tir < MIN_VITESSE:
-            vitesse_tir = MIN_VITESSE
-        vitesse_tir += VITESSE_INCREMENT
-        vitesse_automatique = False
-        if vitesse_tir > MAX_VITESSE:
-           vitesse_tir = MAX_VITESSE
-    elif touche == pygame.K_DOWN:
-        if vitesse_tir > MAX_VITESSE:
-            vitesse_tir = MAX_VITESSE
-        vitesse_tir -= VITESSE_INCREMENT
-        vitesse_automatique = False
-        if vitesse_tir < MIN_VITESSE:
-           vitesse_tir = MIN_VITESSE
-    elif touche == pygame.K_a:
-        if cible_presente:
-            ok, v = calculer_vitesse(position_canon, angle_canon,
-                                     position_cible, GRAVITE)
-            if ok:
-                vitesse_tir = v
-                vitesse_automatique = True
-                position_impact = calculer_impact(position_canon, angle_canon,
-                                                  dimensions_fenetre[1], v,
-                                                  GRAVITE)
-
-    elif touche == pygame.K_c:
-        cible_presente = False
-    return
-
-def tri_projectiles(projectiles):
-    temps_maintenant = pygame.time.get_ticks()
-    return list(filter(lambda x: x['temps_depart']
-                        > temps_maintenant - 4000, projectiles))
-
-### Paramètre(s)
-
-RAYON_DISQUE_CANON = 20
-RAYON_CANON = 8
-LONGUEUR_CANON = 35
-
-LARGEUR_INDICATEUR = 25
-HAUTEUR_INDICATEUR = 75
-OFFSET_INDICATEUR = 50
-
-MIN_VITESSE = 0.4
-MAX_VITESSE = 1.5
-VITESSE_INCREMENT = 0.05
-
-RAYON_CIBLE = 15
-
-ANGLE_INCREMENT = math.pi / 50
-MAX_ANGLE_CANON = math.pi / 2 - 0.1
-MIN_ANGLE_CANON = -math.pi / 2 + 0.1
-
-GRAVITE = 0.001
+# Paramètres
 
 dimensions_fenetre = (800, 600)  # en pixels
 images_par_seconde = 25
 
-couleur_fond = BLEUCIEL
-position_canon = (50, 450)
-angle_canon = -math.pi / 4
+taille_grille = 100
+longueur_pointille = 10
 
-position_cible = (-100, -100)
-cible_presente = False
-vitesse_tir = 0.8
-vitesse_automatique = False
+t_trame = 0.010
+t_echantillons = t_trame / dimensions_fenetre[0]
 
-### Programme
+seuil_trigger = 5
+seuil_trigger_delta = 0.2
+
+couleur_signaux = [ JAUNE, CYAN, MAGENTA, VERT ]
+gain_signaux = [ 20, 20, 20, 20 ]
 
 # Initialisation
 
 pygame.init()
 
 fenetre = pygame.display.set_mode(dimensions_fenetre)
-pygame.display.set_caption("Programme 6");
+pygame.display.set_caption("Programme 4")
 
 horloge = pygame.time.Clock()
+couleur_fond = BLEUCLAIR
 
 pygame.key.set_repeat(10, 10)
 
-projectiles = []
+acquisition_initialisee = False
+signaux_initialises = False
 
-# Boucle principale
+# Dessin
 
 while True:
-    temps_maintenant = pygame.time.get_ticks()
-
     for evenement in pygame.event.get():
         if evenement.type == pygame.QUIT:
             pygame.quit()
-            sys.exit();
-        elif evenement.type == pygame.MOUSEBUTTONDOWN:
-            gerer_bouton(evenement)
+            sys.exit()
         elif evenement.type == pygame.KEYDOWN:
-            gerer_touche(evenement.key)
+            if evenement.key == pygame.K_UP:
+                seuil_trigger += seuil_trigger_delta
+            elif evenement.key == pygame.K_DOWN:
+                seuil_trigger -= seuil_trigger_delta
+
+    temps_maintenant = pygame.time.get_ticks() / 1000
 
     fenetre.fill(couleur_fond)
-
-    if vitesse_automatique:
-        dessiner_impact()
-
-    dessiner_cible()
-    dessiner_projectiles()
-    dessiner_canon()
-
-    projectiles = tri_projectiles(projectiles)
-
+    afficher_trame(temps_maintenant)
+    afficher_trigger()
+    afficher_grille()
     pygame.display.flip()
     horloge.tick(images_par_seconde)

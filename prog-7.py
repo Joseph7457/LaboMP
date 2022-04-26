@@ -1,219 +1,201 @@
-#Nicolas Schneiders
 import math
 import pygame
 import sys
+#Joseph Gabriel
+#Ricardo Ono Coimbra
+#Roxane Nashroudi
+
+# Fonctions
+
+def dessiner_pointilles_h(surface, couleur, y):
+    n = dimensions_fenetre[0] // (longueur_pointille * 2)
+
+    for i in range(n + 1):
+        x1 = int((i - 0.25) * longueur_pointille * 2)
+        x2 = x1 + longueur_pointille
+        pygame.draw.line(surface, couleur, (x1, y), (x2, y))
+
+    return
+
+def dessiner_pointilles_v(surface, couleur, x):
+    n = dimensions_fenetre[1] // (longueur_pointille * 2)
+
+    for i in range(n + 1):
+        y1 = (i - 0.25) * longueur_pointille * 2
+        y2 = y1 + longueur_pointille
+        pygame.draw.line(surface, couleur, (x, y1), (x, y2))
+
+    return
+
+def afficher_grille():
+    yc = dimensions_fenetre[1] // 2
+    nh = yc // taille_grille
+
+    for i in range(1, nh + 1):
+        dessiner_pointilles_h(fenetre, GRIS, yc + i * taille_grille)
+        dessiner_pointilles_h(fenetre, GRIS, yc - i * taille_grille)
+
+    pygame.draw.line(fenetre, GRIS, (0, yc), (dimensions_fenetre[0], yc))
+
+    nv = dimensions_fenetre[0] // taille_grille
+    for i in range(0, nv + 1):
+        dessiner_pointilles_v(fenetre, GRIS, i * taille_grille)
+
+    return
+
+def generer_signaux(delta_t):
+    PERIODE_1 = 1 / 222
+    PERIODE_2 = 1
+    PERIODE_3 = 1
+    PERIODE_4 = 1
+
+    AMPL_1 = 5
+    AMPL_2 = 1
+    AMPL_3 = 1
+    AMPL_4 = 1
+
+
+    global signaux_initialises, a1, a2, a3, a4
+    if not signaux_initialises:
+        a1 = 0
+        a2 = 0
+        a3 = 0
+        a4 = 0
+        signaux_initialises = True
+        return (0, 0, 0, 0)
+
+    a1 = math.fmod(a1 + delta_t * 2 * math.pi / PERIODE_1,
+                   2 * math.pi)
+    a2 = math.fmod(a2 + delta_t * 2 * math.pi / PERIODE_2,
+                   2 * math.pi)
+    a3 = math.fmod(a3 + delta_t * 2 * math.pi / PERIODE_3,
+                   2 * math.pi)
+    a4 = math.fmod(a4 + delta_t * 2 * math.pi / PERIODE_4,
+                   2 * math.pi)
+
+    if(a1 >= math.pi):
+        AMPL_1 = 5
+    elif a1 < math.pi:
+        AMPL_1 = 0
+
+    return (AMPL_1 * math.cos(a1),
+            (AMPL_1 * math.cos(a1)) / 2,
+            (AMPL_1 * math.cos(a1)) *((AMPL_1 * math.cos(a1)) / 2),
+            100)
+
+def acquisition(t):
+    global acquisition_initialisee, t_signaux_prec
+
+    if acquisition_initialisee:
+        dt = t - t_signaux_prec
+        if dt <= 0:
+            print("erreur de timing")
+            sys.exit()
+
+        while dt > t_echantillons:
+            generer_signaux(t_echantillons)
+            dt -= t_echantillons
+
+        s = generer_signaux(dt)
+    else:
+        s = (0, 0, 0, 0)
+        acquisition_initialisee = True
+
+    t_signaux_prec = t
+
+    return s
+
+def afficher_signal(x, v, couleur, gain):
+    y = dimensions_fenetre[1] // 2 - v * gain
+    pygame.draw.line(fenetre, couleur, (x, y - 5), (x, y + 5))
+    return
+
+def afficher_trame(temps_maintenant):
+    signaux_prec = acquisition(temps_maintenant)
+
+    for x in range(dimensions_fenetre[0]):
+        temps_maintenant += t_echantillons
+        signaux = acquisition(temps_maintenant)
+
+        if (signaux[0] >= seuil_trigger and
+            signaux_prec[0] < seuil_trigger):
+            break
+
+        signaux_prec = signaux
+
+    for x in range(dimensions_fenetre[0]):
+        temps_maintenant += t_echantillons
+        signaux = acquisition(temps_maintenant)
+        for i in range(4):
+            afficher_signal(x, signaux[i], couleur_signaux[i],
+                            gain_signaux[i])
+    return
+
+def afficher_trigger():
+    y =  dimensions_fenetre[1] // 2 - seuil_trigger * gain_signaux[0]
+    pygame.draw.line(fenetre, ROUGE, (0, y), (20, y), 5)
+    return
 
 # Constantes
 
-NOIR = (0, 0, 0)
+BLEUCLAIR = (127, 191, 255)
+CYAN = (0, 255, 255)
+GRIS = (127, 127, 127)
+JAUNE = (255, 255, 0)
+MAGENTA = (255, 0, 255)
 ROUGE = (255, 0, 0)
-ORANGE = (255, 100, 10)
-JAUNE = (255,255,0)
-BLEU_CLAIR = (0, 255, 255)
-
-G = 0.001
+VERT = (0, 255, 0)
 
 # Paramètres
 
 dimensions_fenetre = (800, 600)  # en pixels
 images_par_seconde = 25
 
-# Variables
+taille_grille = 100
+longueur_pointille = 10
 
-position_vaisseau = [100,100]
-orientation_vaisseau = 0
+t_trame = 0.010
+t_echantillons = t_trame / dimensions_fenetre[0]
 
-compteur_propulseur = 0
+seuil_trigger = 5
+seuil_trigger_delta = 0.2
 
-position_planete = [0,0]
-planete_up = False
-masse_planete = 0
-
-
-### Fonctions d'affichage ###
-
-
-def dessiner_triangle(fenetre, couleur_turb, p, r, a, b):
-    p1 = [p[0] + math.cos(a+b) * r , p[1] - math.sin(a+b) * r]
-    p2 = [p[0] + math.cos(a-b) * r , p[1] - math.sin(a-b) * r]
-    pygame.draw.polygon(fenetre, couleur_turb, [p, p1, p2])
-
-
-
-def afficher_vaisseau(fenetre, couleur_vaisseau, rayon_vaisseau, couleur_turb ,position_vaisseau ,r ,a ,b):
-    global compteur_propulseur
-    p = position_vaisseau
-    if compteur_propulseur > 0:
-        dessiner_triangle(fenetre, JAUNE, p, 38, orientation_vaisseau + 21 * math.pi /20, math.pi /30)
-        dessiner_triangle(fenetre, JAUNE, p, 38, orientation_vaisseau + 19 * math.pi /20, math.pi /30)
-        compteur_propulseur -= 1
-    dessiner_triangle(fenetre, couleur_turb, p, r, a, b)
-    pygame.draw.circle(fenetre, couleur_vaisseau, p, rayon_vaisseau)
-
-
-
-def afficher_planete(fenetre, position_planete, planete_up, couleur_planete, rayon_planete):
-    if planete_up:
-        pygame.draw.circle(fenetre, couleur_planete, position_planete, rayon_planete)
-
-
-### Fonctions de calcul des mrua ###
-
-def maj_position(position_objet, temps_mtn, masse_objet, force_poussee, orientation_objet, masse_planete, position_planete, planete_up):
-    global compteur_propulseur, vx, vy, t0
-    if planete_up:
-        (acc_gravx, acc_gravy) = calcul_acc_grav(position_objet, position_planete, masse_objet, masse_planete)
-
-    else:
-        (acc_gravx, acc_gravy) = (0,0)
-
-    if compteur_propulseur>0:
-        a = force_poussee/masse_objet
-        (ax, ay) = (a * math.cos(orientation_objet), -a * math.sin(orientation_objet))
-
-    else:
-        (ax, ay) = (0,0)
-
-    acc_totx = ax + acc_gravx
-    acc_toty = ay + acc_gravy
-    deltaT = temps_mtn - t0
-    [px,py] = position_objet
-
-    px += vx * deltaT + (acc_totx * deltaT**2)/2
-    py += vy * deltaT + (acc_toty * deltaT**2)/2
-    vx += acc_totx * deltaT
-    vy += acc_toty * deltaT
-    t0 = temps_mtn
-
-    return [int(px), int(py)]
-
-
-
-def calcul_acc_grav(position_objet, position_planete, masse_objet, masse_planete):
-    global G
-
-    (px1,py1) = position_objet
-    (px2,py2) = position_planete
-
-    distance_centre_2 = ((px1-px2)**2 + (py1-py2)**2)
-    f_attrac = (G*masse_objet*masse_planete) / distance_centre_2
-    acc_grav = f_attrac/masse_objet
-
-    vect_VP = [px2-px1, py2-py1]
-    norme_VP = norme(vect_VP)
-    vect_dir = [vect_VP[0] / norme_VP, vect_VP[1] / norme_VP]
-
-    acc_gravx = vect_dir[0]*acc_grav
-    acc_gravy = vect_dir[1]*acc_grav
-
-    return (acc_gravx, acc_gravy)
-
-
-
-def norme(vecteur):
-    norme = (vecteur[0]**2 + vecteur[1]**2)**(1/2)
-    return norme
-
-
-### Gameplay supplémentaire ###
-
-def pacman_like(position_objet, dimensions_fenetre):
-    [px ,py] = position_objet
-    [long,larg] = dimensions_fenetre
-    if(py > larg + 100):
-        py = -100
-    elif(py < -100):
-        py = larg + 100
-
-    if(px > long + 100):
-        px = -100
-    elif(px < -100):
-        long + 100
-
-    return [px,py]
-
-
-### Interpreter entrées ###
-
-def gerer_touche():
-    global orientation_vaisseau, compteur_propulseur
-    if evenement.key == pygame.K_LEFT:
-        orientation_vaisseau -= math.pi/20
-    elif evenement.key == pygame.K_RIGHT:
-        orientation_vaisseau += math.pi/20
-    elif evenement.key == pygame.K_UP:
-        compteur_propulseur += 3
-
-
-
-def gerer_bouton():
-    global position_planete, planete_up
-    if evenement.button == 1:
-        position_planete = evenement.pos
-        planete_up = True
-    elif evenement.button == 3:
-        planete_up = False
-
-
-### Fonction test ###
-
-def test_collision(position_objet1, position_objet2, rayon1, rayon2, planete_up):
-    if planete_up:
-        (px1,py1) = position_objet1
-        (px2,py2) = position_objet2
-        distance_centre = ((px1-px2)**2 + (py1-py2)**2)**(1/2)
-        if distance_centre < rayon1 + rayon2 and planete_up:
-            pygame.quit()
-            sys.exit()
-
-
-
-def val_masse_planete(planete_up):
-    global masse_planete
-    if planete_up:
-        masse_planete = 1600
-    else:
-        masse_planete = 0
-
+couleur_signaux = [ JAUNE, CYAN, MAGENTA, VERT ]
+gain_signaux = [ 20, 20, 20, 20 ]
 
 # Initialisation
-
-a=0
-vx=0
-vy=0
-t0=0
 
 pygame.init()
 
 fenetre = pygame.display.set_mode(dimensions_fenetre)
-pygame.display.set_caption("Programme 7")
+pygame.display.set_caption("Programme 4")
 
 horloge = pygame.time.Clock()
-couleur_fond = NOIR
+couleur_fond = BLEUCLAIR
 
 pygame.key.set_repeat(10, 10)
 
-while True:
-    temps_mtn = pygame.time.get_ticks()
+acquisition_initialisee = False
+signaux_initialises = False
 
+# Dessin
+
+while True:
     for evenement in pygame.event.get():
-        if evenement.type == pygame.KEYDOWN:
-            gerer_touche()
-        if evenement.type == pygame.MOUSEBUTTONDOWN:
-            gerer_bouton()
         if evenement.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-    ###
-    val_masse_planete(planete_up)
-    position_vaisseau = pacman_like(position_vaisseau, dimensions_fenetre)
-    ###
+        elif evenement.type == pygame.KEYDOWN:
+            if evenement.key == pygame.K_UP:
+                seuil_trigger += seuil_trigger_delta
+            elif evenement.key == pygame.K_DOWN:
+                seuil_trigger -= seuil_trigger_delta
+
+    temps_maintenant = pygame.time.get_ticks() / 1000
+
     fenetre.fill(couleur_fond)
-    ###
-    afficher_planete(fenetre, position_planete, planete_up, BLEU_CLAIR, 40)
-    position_vaisseau = maj_position(position_vaisseau, temps_mtn, 1, 0.0003, orientation_vaisseau, masse_planete, position_planete, planete_up)
-    afficher_vaisseau(fenetre, ROUGE, 15, ORANGE, position_vaisseau, 23, orientation_vaisseau + math.pi, math.pi/7)
-    ###
+    afficher_trame(temps_maintenant)
+    afficher_trigger()
+    afficher_grille()
     pygame.display.flip()
-    test_collision(position_vaisseau, position_planete, 15, 40, planete_up)
     horloge.tick(images_par_seconde)
