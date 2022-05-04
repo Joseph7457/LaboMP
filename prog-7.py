@@ -78,9 +78,9 @@ def generer_signaux(delta_t):
     elif a1 < math.pi:
         AMPL_1 = 0
 
-    return (AMPL_1 * math.cos(a1),
-            (AMPL_1 * math.cos(a1)) / 2,
-            (AMPL_1 * math.cos(a1)) *((AMPL_1 * math.cos(a1)) / 2),
+    return (AMPL_1 ,
+            AMPL_1/ 2,
+            (AMPL_1 * AMPL_1 ) / 2,
             100)
 
 def acquisition(t):
