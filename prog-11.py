@@ -37,6 +37,8 @@ mobile_vy                  = 0
 mobile_charge              = 10**(-10)
 mobile_masse               = 10**(-10)
 mobile_energie_cinetique   = 0
+
+champ_magnetique = 1
 #mobile_energie_potentielle = 0
 
 #potentiel_souris = 0
@@ -108,12 +110,15 @@ def mettre_a_jour_mobile(t):
 
 
 def tableau_de_bord(champ_electrique_v, ec):
-    texte_1 = "energie cinétique: {0:.2f} ".format(ec)
+    texte_1 = "champ electrique: {0:.2f} V/m".format(ec)
     image_1 = police.render(texte_1, True, NOIR)
     fenetre.blit(image_1, (dimensions_fenetre[0]//20, dimensions_fenetre[1]//20))
-    texte_2 = "champ magnétique: {0:.2f} ".format(champ_electrique_v)
+    texte_2 = "champ magnétique: {0:.2f} T".format(champ_electrique_v)
     image_2 = police.render(texte_2, True, NOIR)
     fenetre.blit(image_2, (dimensions_fenetre[0]//20, 2*dimensions_fenetre[1]//20))
+    texte_3 = "energie cinétique: {0:.2f} µJ".format(champ_electrique_v)
+    image_3 = police.render(texte_3, True, NOIR)
+    fenetre.blit(image_3, (dimensions_fenetre[0]//20, 3*dimensions_fenetre[1]//20))
 
 
     """texte_2 = "energie potentielle: {0:.2f} ".format(ep)
