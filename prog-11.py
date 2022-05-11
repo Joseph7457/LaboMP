@@ -5,6 +5,9 @@ import math
 import pygame
 import sys
 import random
+import numpy as np
+
+
 pygame.init()
 
 # Constantes
@@ -38,9 +41,8 @@ mobile_charge              = 10**(-10)
 mobile_masse               = 10**(-10)
 mobile_energie_cinetique   = 0
 
-TAILLE_TRACE = 100
-trace = [[0,0]] * TAILLE_TRACE
-print(trace)
+TAILLE_TRACE = 1000
+trace = np.empty([TAILLE_TRACE, 2])
 nb_trace = 0
 prochain_trace = 0
 
@@ -53,6 +55,30 @@ champ_magnetique = 1
 temps_maintenant = pygame.time.get_ticks()
 
 police  = pygame.font.SysFont("monospace", 16)
+
+def ajouter_trace(x,y):
+    global nb_trace, trace, prochain_trace
+    #print(trace)
+    print(prochain_trace)
+    trace[prochain_trace][0] =  x
+    trace[prochain_trace][1] =  y
+    #print(trace)
+    #print("\n")
+    if(nb_trace < TAILLE_TRACE):
+        nb_trace += 1
+
+    prochain_trace = (prochain_trace + 1)
+    prochain_trace = prochain_trace % TAILLE_TRACE
+
+
+def afficher_trace():    
+    index = 0
+    for t in trace:
+        if(index>nb_trace):
+            break
+        pygame.draw.circle(fenetre, (0,150,150), (t[0], t[1]), 4, 4)
+        index += 1
+ 
 
 
 def calculer_potentiel(x, y):
@@ -119,7 +145,7 @@ def mettre_a_jour_mobile(t):
     Fx += Flx
     Fy += Fly
     acceleration        = [ Fx/mobile_masse, Fy/mobile_masse ]
-
+    """
     print(" ")
     print("v: " + str(v))
     print("vx: " + str(mobile_vx))
@@ -133,7 +159,7 @@ def mettre_a_jour_mobile(t):
     print("Fy" + str(Fy)) 
     print("Acceleration X " + str(acceleration[0]))
     print("Acceleration Y " + str(acceleration[1])) 
-
+    """
     
     mobile_vx           +=  acceleration[0] * t
     mobile_vy           +=  acceleration[1] * t
@@ -153,19 +179,6 @@ def tableau_de_bord(champ_electrique_v, ec):
     fenetre.blit(image_3, (dimensions_fenetre[0]//20, 3*dimensions_fenetre[1]//20))
 
 
-    """texte_2 = "energie potentielle: {0:.2f} ".format(ep)
-    image_2 = police.render(texte_2, True, NOIR)
-    fenetre.blit(image_2, (dimensions_fenetre[0]//20, (dimensions_fenetre[1]//20) + 50 ))
-
-    texte_3 = "energie totale: {0:.2f} ".format(ep+ec)
-    image_3 = police.render(texte_3, True, NOIR)
-    fenetre.blit(image_3, (dimensions_fenetre[0]//20, (dimensions_fenetre[1]//20) + 100))
-
-    texte_4 = "potentiel souris: {0:.2f} ".format(ps)
-    image_4 = police.render(texte_4, True, NOIR)
-    fenetre.blit(image_4, (dimensions_fenetre[0]//20, (dimensions_fenetre[1]//20) + 150))"""
-
-
 def dessiner_mobile():
     if (mobile_est_present):
         if(mobile_charge >= 0 ):
@@ -176,15 +189,6 @@ def dessiner_mobile():
         pygame.draw.circle(fenetre, couleur, (mobile_x, mobile_y), 10, 4)
 
 
-
-"""def ajouter_objet(x,y,z, vx, vy):
-    objets.append([x,y,z, vx, vy])"""
-
-"""def print_objets():
-    for o in objets:
-        print(o)"""
-
-
 def dessiner_objets():
     for o in objets:
         if (o[2]<0):
@@ -193,22 +197,7 @@ def dessiner_objets():
             pygame.draw.circle(fenetre, ROUGE, (o[0], o[1]), RAYON)
 
 
-"""def bouger_objets():
-    for o in objets:
-        o[0] += o[3]
-        o[1] += o[4]
 
-        if (o[0] < 0):
-            o[0] = LARGEUR
-        if (o[0] > LARGEUR):
-            o[0] = 0
-
-        if (o[1] < 0):
-            o[1] = HAUTEUR
-        if (o[1] > HAUTEUR):
-            o[1] = 0"""
-
-        #print(o)
 def calculer_angle(vx, vy):
  
     if(vx == 0):
@@ -219,12 +208,6 @@ def calculer_angle(vx, vy):
     else:
         return (math.atan(vy/vx))
 
-    """
-    On a : tan b^ = [AC][AB] = 57.
-On obtient la valeur de b^ en utilisant la fonction inv tan de la calculatrice.
-b^ = 35° (à un degré près par défaut).
-
-"""
 
 
 def norme_vecteur(x, y):
@@ -311,8 +294,9 @@ while True:
     #position_souris = pygame.mouse.get_pos()
     delta_time = pygame.time.get_ticks() - temps_maintenant  
     t_seconde  = delta_time / 1000
-    print("t = " + str(t_seconde))
     mettre_a_jour_mobile(t_seconde)
+    ajouter_trace(mobile_x,mobile_y)
+    afficher_trace()
 
     mobile_energie_cinetique   = calculer_energie_cinetique(mobile_masse, mobile_vx, mobile_vy)
     ec = mobile_energie_cinetique * pow(10,6)
