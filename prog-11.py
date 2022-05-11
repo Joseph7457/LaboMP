@@ -284,7 +284,11 @@ while True:
                 champ_electrique_v += 1
             elif (evenement.key == pygame.K_DOWN and champ_electrique_v >= -100):
                 champ_electrique_v -= 1
-            elif (evenement.key == pygame.K_SPACE and champ_electrique_v >= -100):
+            elif (evenement.key == pygame.K_LEFT and champ_magnetique > -1):
+                champ_magnetique -= 0.01
+            elif (evenement.key == pygame.K_RIGHT and champ_magnetique < 1):
+                champ_magnetique += 0.01
+            elif (evenement.key == pygame.K_SPACE ):
                 mobile_x                   = dimensions_fenetre[0]/2
                 mobile_y                   = dimensions_fenetre[1]/2
                 mobile_vx                  = 0  
