@@ -103,19 +103,36 @@ def mettre_a_jour_mobile(t):
         mobile_est_present   = False
 
     v = norme_vecteur(mobile_vx, mobile_vy);
-    angle = calculer_angle_par_rapport_a_l_axe_x(mobile_vx, mobile_vy)
-    print(angle)
-    
+    angle = calculer_angle(mobile_vx, mobile_vy)   
     Fl = mobile_charge * v * champ_magnetique
-    Fla = angle - math.pi/2
-
-    Fx += (Fl * math.cos(Fla))
-    Fy += (Fl * math.sin(Fla))
-
+    if(Fl>0):
+        Fla = angle + math.pi/2
+    else:
+        Fla = angle - math.pi/2
+    Flx = Fl * math.cos(Fla)
+    Fly = Fl * math.sin(Fla)
+    Fx += Flx
+    Fy += Fly
     acceleration        = [ Fx/mobile_masse, Fy/mobile_masse ]
+
+    print(" ")
+    print("v: " + str(v))
+    print("vx: " + str(mobile_vx))
+    print("vy: " + str(mobile_vy))
+    print("va: " + str(angle))
+    print("Fl : " + str(Fl))
+    print("Flx : " + str(Flx))
+    print("Fly : " + str(Fly))
+    print("Fla : " + str(Fla))
+    print("Fx: " + str(Fx))
+    print("Fy" + str(Fy)) 
+    print("Acceleration X " + str(acceleration[0]))
+    print("Acceleration Y " + str(acceleration[1])) 
+
+    
     mobile_vx           +=  acceleration[0] * t
     mobile_vy           +=  acceleration[1] * t
-    mobile_x            +=  mobile_vx * t
+    mobile_x            +=  mobile_vx * t 
     mobile_y            +=  mobile_vy * t
 
 
@@ -187,13 +204,15 @@ def dessiner_objets():
             o[1] = 0"""
 
         #print(o)
-def calculer_angle_par_rapport_a_l_axe_x(x, y):
-
-    a = 0
-    if (x != 0):
-        a = y/x
-    temp = math.atan(a)
-    return (math.pi/2 - temp)
+def calculer_angle(vx, vy):
+ 
+    if(vx == 0):
+        if(vy > 0):
+            return math.pi/2
+        else:
+            return -math.pi/2
+    else:
+        return (math.atan(vy/vx))
 
     """
     On a : tan b^ = [AC][AB] = 57.
@@ -216,6 +235,7 @@ def normer_vecteur(tailleMax, v):
 
 
 def calculer_champ_electrique(x,y):
+
     norme = 0
     v = [0,0]
 
@@ -246,17 +266,6 @@ def calculer_champ_electrique(x,y):
 fenetre = pygame.display.set_mode(dimensions_fenetre)
 pygame.display.set_caption("Programme 1")
 
-
-"""def retirer_objet(x, y):
-    if (len(objets)> 0 ):
-        for o in objets:
-            distance = math.sqrt((o[0]-x)*(o[0]-x) + (o[1]-y)*(o[1]-y))
-
-            if (distance<RAYON):
-                objets.remove(o)
-                return 1
-    return 0"""
-
 horloge = pygame.time.Clock()
 couleur_fond = BLEUCLAIR
 
@@ -284,56 +293,6 @@ while True:
                 mobile_vy                  = 0
 
 
-
-        """
-        
-
-    Ajouter des instructions de gestion d’évènements dans la boucle principale du programme, de façon à détecter des appuis sur la flèche haute (code pygame.K_UP) et la flèche basse (code pygame.K_DOWN).
-
-    Réagir à ces évènements en incrémentant ou en décrémentant la variable champ_electrique_v, par pas de 1 V/m. Implémenter un garde-fou garantissant que la valeur de cette variable reste toujours comprise dans l’intervalle [-100, 100].
-
-    Détecter également les appuis sur la barre d’espacement (code pygame.K_SPACE), qui doivent repositionner le mobile au centre de la fenêtre, avec une vitesse nulle.
-
-    Tester le bon fonctionnement du programme. Vous devriez être à même de contrôler le déplacement vertical du mobile, en agissant sur la composante verticale du champ électrique.
-
-        
-        elif evenement.type == pygame.MOUSEBUTTONDOWN:
-            if (evenement.button == 1):
-                if (not retirer_objet(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1])):
-                    ajouter_objet(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1],pow(10,-7),  0,0)
-            elif (evenement.button == 3):
-                if (not retirer_objet(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1])):
-                    retirer_objet(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1])
-                    ajouter_objet(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1],-pow(10,-7), 0,0)
-
-        elif evenement.type == pygame.KEYDOWN:
-
-            x_souris, y_souris = pygame.mouse.get_pos()
-
-            if (evenement.key == pygame.K_p):
-
-                if(not mobile_est_present):
-                    mobile_est_present = True
-
-
-                mobile_charge      = pow(10,-7)
-                mobile_x           = x
-                mobile_y           = y
-                mobile_vx          = 0
-                mobile_vy          = 0
-
-            if (evenement.key == pygame.K_n):
-                if(not mobile_est_present):
-
-                    mobile_est_present = True
-
-                mobile_charge      = -pow(10,-7)
-                mobile_x = x_souris
-                mobile_y = y_souris
-                mobile_vx          = 0
-                mobile_vy          = 0"""
-
-
     #mobile_x           = dimensions_fenetre[0]/2
     #mobile_y           = dimensions_fenetre[1]/2
     mobile_est_present = True
@@ -341,17 +300,13 @@ while True:
     fenetre.fill(couleur_fond)
 
     #position_souris = pygame.mouse.get_pos()
-    delta_time = temps_maintenant - pygame.time.get_ticks()
+    delta_time = pygame.time.get_ticks() - temps_maintenant  
     t_seconde  = delta_time / 1000
+    print("t = " + str(t_seconde))
     mettre_a_jour_mobile(t_seconde)
 
     mobile_energie_cinetique   = calculer_energie_cinetique(mobile_masse, mobile_vx, mobile_vy)
-    #mobile_energie_potentielle = calculer_energie_potentielle(mobile_x, mobile_y, mobile_charge)
-    #potentiel_souris           = calculer_potentiel(position_souris[0], position_souris[1])
-
     ec = mobile_energie_cinetique * pow(10,6)
-    #ep = mobile_energie_potentielle * pow(10,6)
-
 
     tableau_de_bord(champ_electrique_v, ec)
     #mobile_energie_potentielle = calculer_energie_potentielle(mobile_x, mobile_y, mobile_charge)
