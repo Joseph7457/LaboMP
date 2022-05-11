@@ -1,6 +1,6 @@
-#Ricardo Ono Coimbra
-#Joseph Gabriel
-#Roxane Nashroudi
+#Ricardo Ono Coimbra #La belle
+#Joseph Gabriel      #La bête
+#Roxane Nashroudi    #Et le truand
 import math
 import pygame
 import sys
@@ -111,6 +111,10 @@ def tableau_de_bord(champ_electrique_v, ec):
     texte_1 = "energie cinétique: {0:.2f} ".format(ec)
     image_1 = police.render(texte_1, True, NOIR)
     fenetre.blit(image_1, (dimensions_fenetre[0]//20, dimensions_fenetre[1]//20))
+    texte_2 = "champ magnétique: {0:.2f} ".format(champ_electrique_v)
+    image_2 = police.render(texte_2, True, NOIR)
+    fenetre.blit(image_2, (dimensions_fenetre[0]//20, 2*dimensions_fenetre[1]//20))
+
 
     """texte_2 = "energie potentielle: {0:.2f} ".format(ep)
     image_2 = police.render(texte_2, True, NOIR)
@@ -231,8 +235,35 @@ while True:
         if evenement.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        elif evenement.type == pygame.KEYDOWN:
 
-        """elif evenement.type == pygame.MOUSEBUTTONDOWN:
+            x_souris, y_souris = pygame.mouse.get_pos()
+
+            if (evenement.key == pygame.K_UP and champ_electrique_v <= 100):
+                champ_electrique_v += 1
+            elif (evenement.key == pygame.K_DOWN and champ_electrique_v >= -100):
+                champ_electrique_v -= 1
+            elif (evenement.key == pygame.K_SPACE and champ_electrique_v >= -100):
+                mobile_x                   = dimensions_fenetre[0]/2
+                mobile_y                   = dimensions_fenetre[1]/2
+                mobile_vx                  = 0  
+                mobile_vy                  = 0
+
+
+
+        """
+        
+
+    Ajouter des instructions de gestion d’évènements dans la boucle principale du programme, de façon à détecter des appuis sur la flèche haute (code pygame.K_UP) et la flèche basse (code pygame.K_DOWN).
+
+    Réagir à ces évènements en incrémentant ou en décrémentant la variable champ_electrique_v, par pas de 1 V/m. Implémenter un garde-fou garantissant que la valeur de cette variable reste toujours comprise dans l’intervalle [-100, 100].
+
+    Détecter également les appuis sur la barre d’espacement (code pygame.K_SPACE), qui doivent repositionner le mobile au centre de la fenêtre, avec une vitesse nulle.
+
+    Tester le bon fonctionnement du programme. Vous devriez être à même de contrôler le déplacement vertical du mobile, en agissant sur la composante verticale du champ électrique.
+
+        
+        elif evenement.type == pygame.MOUSEBUTTONDOWN:
             if (evenement.button == 1):
                 if (not retirer_objet(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1])):
                     ajouter_objet(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1],pow(10,-7),  0,0)
@@ -301,3 +332,4 @@ while True:
 
     pygame.display.flip()
     horloge.tick(images_par_seconde)
+
