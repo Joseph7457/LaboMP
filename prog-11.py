@@ -89,34 +89,44 @@ def calculer_energie_cinetique(masse, vx, vy):
 
 def mettre_a_jour_mobile(t):
     global mobile_x, mobile_y, mobile_vx, mobile_vy, mobile_est_present
+
+    Fx = 0
+    Fy = 0
     champElectrique     = calculer_champ_electrique(mobile_x,mobile_y)
 
     if(champElectrique):
 
-        Fx = champElectrique[0] * mobile_charge
-        Fy = champElectrique[1] * mobile_charge
+        Fx += champElectrique[0] * mobile_charge
+        Fy += champElectrique[1] * mobile_charge
 
-        acceleration        = [ Fx/mobile_masse, Fy/mobile_masse ]
-
-        mobile_vx           +=  acceleration[0] * t
-        mobile_vy           +=  acceleration[1] * t
-        mobile_x            +=  mobile_vx * t
-        mobile_y            +=  mobile_vy * t
     else:
         mobile_est_present   = False
-        #mobile_x            +=  mobile_vx * t
-        #mobile_y            +=  mobile_vy * t
 
+    v = norme_vecteur(mobile_vx, mobile_vy);
+    angle = calculer_angle_par_rapport_a_l_axe_x(mobile_vx, mobile_vy)
+    print(angle)
+    
+    Fl = mobile_charge * v * champ_magnetique
+    Fla = angle - math.pi/2
+
+    Fx += (Fl * math.cos(Fla))
+    Fy += (Fl * math.sin(Fla))
+
+    acceleration        = [ Fx/mobile_masse, Fy/mobile_masse ]
+    mobile_vx           +=  acceleration[0] * t
+    mobile_vy           +=  acceleration[1] * t
+    mobile_x            +=  mobile_vx * t
+    mobile_y            +=  mobile_vy * t
 
 
 def tableau_de_bord(champ_electrique_v, ec):
-    texte_1 = "champ electrique: {0:.2f} V/m".format(ec)
+    texte_1 = "champ electrique: {0:.2f} V/m".format(champ_electrique_v)
     image_1 = police.render(texte_1, True, NOIR)
     fenetre.blit(image_1, (dimensions_fenetre[0]//20, dimensions_fenetre[1]//20))
-    texte_2 = "champ magnétique: {0:.2f} T".format(champ_electrique_v)
+    texte_2 = "champ magnétique: {0:.2f} T".format(champ_magnetique)
     image_2 = police.render(texte_2, True, NOIR)
     fenetre.blit(image_2, (dimensions_fenetre[0]//20, 2*dimensions_fenetre[1]//20))
-    texte_3 = "energie cinétique: {0:.2f} µJ".format(champ_electrique_v)
+    texte_3 = "energie cinétique: {0:.2f} µJ".format(ec)
     image_3 = police.render(texte_3, True, NOIR)
     fenetre.blit(image_3, (dimensions_fenetre[0]//20, 3*dimensions_fenetre[1]//20))
 
@@ -177,6 +187,25 @@ def dessiner_objets():
             o[1] = 0"""
 
         #print(o)
+def calculer_angle_par_rapport_a_l_axe_x(x, y):
+
+    a = 0
+    if (x != 0):
+        a = y/x
+    temp = math.atan(a)
+    return (math.pi/2 - temp)
+
+    """
+    On a : tan b^ = [AC][AB] = 57.
+On obtient la valeur de b^ en utilisant la fonction inv tan de la calculatrice.
+b^ = 35° (à un degré près par défaut).
+
+"""
+
+
+def norme_vecteur(x, y):
+    a = x*x + y*y
+    return math.sqrt(a)
 
 def normer_vecteur(tailleMax, v):
     norme   = math.sqrt(v[0]*v[0] + v[1]*v[1])
