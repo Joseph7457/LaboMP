@@ -18,8 +18,8 @@ C = 20
 k = 8.9876 * pow(10,9)
 
 
-LARGEUR = 500
-HAUTEUR = 500
+LARGEUR = 900
+HAUTEUR = 600
 dimensions_fenetre = (LARGEUR, HAUTEUR) # en pixels
 images_par_seconde = 50
 objets = []
@@ -105,10 +105,8 @@ def mettre_a_jour_mobile(t):
     v = norme_vecteur(mobile_vx, mobile_vy);
     angle = calculer_angle(mobile_vx, mobile_vy)   
     Fl = mobile_charge * v * champ_magnetique
-    if(Fl>0):
-        Fla = angle + math.pi/2
-    else:
-        Fla = angle - math.pi/2
+    Fla = angle + math.pi/2
+
     Flx = Fl * math.cos(Fla)
     Fly = Fl * math.sin(Fla)
     Fx += Flx
