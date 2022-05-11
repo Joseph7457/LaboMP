@@ -38,6 +38,13 @@ mobile_charge              = 10**(-10)
 mobile_masse               = 10**(-10)
 mobile_energie_cinetique   = 0
 
+TAILLE_TRACE = 100
+trace = [[0,0]] * TAILLE_TRACE
+print(trace)
+nb_trace = 0
+prochain_trace = 0
+
+
 champ_magnetique = 1
 #mobile_energie_potentielle = 0
 
